@@ -6029,6 +6029,41 @@ class CollectionAPITest(TestCase):
         }]
         self.assertEqual(expect, list(actual))
 
+    def test__set_any_element_true(self):
+        collection = self.db.collection
+        # Fxamples from MongoDB docs: https://www.mongodb.com/docs/v4.4/reference/operator/aggregation/anyElementTrue/
+        collection.insert_many([
+            {"_id": 1, "responses": [True] },
+            {"_id": 2, "responses": [True, False] },
+            {"_id": 3, "responses": []},
+            {"_id": 4, "responses": [1, True, "seven" ] },
+            {"_id": 6, "responses": [[]]},
+            {"_id": 7, "responses": [[0]]},
+            {"_id": 8, "responses": [[False]]},
+            {"_id": 10, "responses": [None, False, 0]},
+            {"_id": 5, "responses": [0]},
+            {"_id": 9, "responses": [None]},
+        ])
+
+        actual = collection.aggregate([{'$project': {
+            '_id': 0,
+            'responses': 1,
+            'isAnyTrue': {'$anyElementTrue': ['$responses']},
+        }}])
+        expect = [
+            {"responses": [True], "isAnyTrue": True},
+            {"responses": [True, False], "isAnyTrue": True},
+            {"responses": [], "isAnyTrue": False},
+            {"responses": [1, True, "seven"], "isAnyTrue": True},
+            {"responses": [[]], "isAnyTrue": True},
+            {"responses": [[0]], "isAnyTrue": True},
+            {"responses": [[False]], "isAnyTrue": True},
+            {"responses": [None, False, 0], "isAnyTrue": False},
+            {"responses": [0], "isAnyTrue": False},
+            {"responses": [None], "isAnyTrue": False},
+        ]
+        self.assertEqual(expect, list(actual))
+
     def test__add_to_set_missing_value(self):
         collection = self.db.collection
         collection.insert_many([

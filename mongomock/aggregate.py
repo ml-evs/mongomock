@@ -939,6 +939,16 @@ class _Parser(object):
                 if set1 != set2:
                     return False
             return True
+        if operator == '$anyElementTrue':
+            # If a set contains a nested array element, 
+            # $anyElementTrue does not descend into the 
+            # nested array but evaluates the array at top-level.
+            # https://www.mongodb.com/docs/v4.4/reference/operator/Aggregation/anyElementTrue/
+            if len(values) > 1:
+                raise RuntimeError("Operator '$anyElementTrue' does not support multiple fields %s", values)
+            _values = [self.parse(value) for value in values][0]
+            return any(v == [] or v for v in _values)
+
         raise NotImplementedError(
             "Although '%s' is a valid set operator for the aggregation "
             'pipeline, it is currently not implemented in Mongomock.' % operator)
